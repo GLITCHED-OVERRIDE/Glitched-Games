@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GlitchFlix</title>
+<style>
+body { margin:0; background:#000; color:#f00; font-family:"Poppins",sans-serif; overflow-x:hidden; }
+header { background:#111; color:#f00; padding:1rem 2rem; text-align:center; font-size:1.6rem; border-bottom:2px solid #f00; text-shadow:0 0 10px #f00; }
+#search { width:80%; display:block; margin:1.5rem auto; padding:0.7rem 1rem; border:2px solid #f00; border-radius:10px; background:#111; color:#f00; font-size:1rem; outline:none; }
+#search:focus { box-shadow:0 0 12px #f00; }
+h2 { color:#f00; margin-left:1rem; }
+.movies { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:1rem; padding:1rem; }
+.movie { background:#111; border-radius:10px; overflow:hidden; cursor:pointer; transition:transform 0.3s ease, box-shadow 0.3s ease; }
+.movie:hover { transform:scale(1.05); box-shadow:0 0 15px #f00; }
+.movie img { width:100%; height:270px; object-fit:cover; }
+.movie h3 { text-align:center; margin:0.5rem; font-size:1rem; color:#f00; }
+
+/* Overlay / video */
+.overlay { position:fixed; inset:0; background:rgba(0,0,0,0.95); display:none; flex-direction:column; align-items:center; justify-content:center; overflow-y:auto; z-index:1000; padding:1rem; }
+.overlay.active { display:flex; }
+#player { width:90%; height:60vh; border:2px solid #f00; border-radius:10px; background:#000; margin-bottom:1rem; }
+.close { color:#f00; cursor:pointer; font-size:1.5rem; margin-bottom:1rem; border:2px solid #f00; border-radius:6px; padding:0.3rem 0.7rem; background:#111; }
+.close:hover { background:#f00; color:#000; }
+
+/* Startup warning */
+#warningModal { position:fixed; inset:0; background:rgba(0,0,0,0.9); display:flex; align-items:center; justify-content:center; flex-direction:column; color:#f00; z-index:2000; }
+#warningModal button { margin-top:20px; padding:10px 20px; border-radius:8px; border:2px solid #f00; background:#111; color:#f00; cursor:pointer; font-weight:bold; }
+#warningModal button:hover { background:#f00; color:#000; }
+</style>
+</head>
+<body>
+
+<header>GlitchFlix</header>
+<input type="text" id="search" placeholder="Search for a movie..." />
+
+<h2>Popular Movies</h2>
+<div class="movies" id="movieList"><p style="text-align:center;color:#888;">Loading movies...</p></div>
+
+<div class="overlay" id="overlay">
+  <button class="close" id="closeOverlay">Close</button>
+  <iframe id="player"></iframe>
+</div>
+
+<div id="warningModal">
+  <h2>Warning: Videos may contain ads!</h2>
+  <p>Please close any ads that appear before continuing.</p>
+  <button id="closeWarning">I Understand</button>
+</div>
+
+<script>
+const API_KEY = "0e33c92186263620ce8c7f6b8fb35b00";
+const API_URL = "https://api.themoviedb.org/3";
+const IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
+
+const searchInput = document.getElementById("search");
+const movieList = document.getElementById("movieList");
+const overlay = document.getElementById("overlay");
+const player = document.getElementById("player");
+const closeOverlay = document.getElementById("closeOverlay");
+const warningModal = document.getElementById("warningModal");
+const closeWarning = document.getElementById("closeWarning");
+
+// Close warning
+closeWarning.onclick = () => warningModal.style.display = "none";
+
+// Load initial movies
+loadPopularMovies();
+
+// Search movies
+searchInput.addEventListener("input", async () => {
+  const q = searchInput.value.trim();
+  if (!q) { loadPopularMovies(); return; }
+  searchMovies(q);
+});
+
+// Fetch and display popular movies
+async function loadPopularMovies() {
+  try {
+    const res = await fetch(`${API_URL}/movie/popular?api_key=${API_KEY}&language=en-US&page=1`);
+    const data = await res.json();
+    displayMovies(data.results);
+  } catch(err) { movieList.innerHTML = "<p style='color:#f00;text-align:center'>Error loading movies.</p>"; console.error(err);}
+}
+
+// Search movies
+async function searchMovies(query) {
+  try {
+    const res = await fetch(`${API_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}`);
+    const data = await res.json();
+    displayMovies(data.results);
+  } catch(err) { movieList.innerHTML = "<p style='color:#f00;text-align:center'>Search failed.</p>"; console.error(err);}
+}
+
+// Display movies in grid
+function displayMovies(movies) {
+  movieList.innerHTML = "";
+  if(!movies || movies.length===0){ movieList.innerHTML="<p style='text-align:center;color:#888;'>No results found.</p>"; return; }
+  movies.forEach(m=>{
+    const div=document.createElement("div");
+    div.className="movie";
+    div.innerHTML=`<img src="${m.poster_path?IMAGE_BASE+m.poster_path:'https://dummyimage.com/200x300/111/ff0000&text=No+Image'}" alt="${m.title}"><h3>${m.title}</h3>`;
+    div.onclick = ()=>openMovieOverlay(m.id);
+    movieList.appendChild(div);
+  });
+}
+
+// Open overlay for movie playback
+function openMovieOverlay(id){
+  overlay.classList.add("active");
+  player.src = `https://player.videasy.net/movie/${id}?color=FF0000`;
+}
+
+// Close overlay
+closeOverlay.onclick = () => { overlay.classList.remove("active"); player.src = ""; }
+</script>
+
+</body>
+</html>
