@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>The Legend of Zelda: Ocarina of Time</title>
+  <base href="https://cdn.jsdelivr.net/gh/a456pur/seraph@main/storage/emulatorjs/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: monospace;
+      font-weight: bold;
+      background: #222;
+      color: #fff;
+      overflow: hidden;
+    }
+    #error {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #f33;
+      font-size: 18px;
+      text-align: center;
+      z-index: 1000;
+    }
+    #game {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+  <div id="error"></div>
+  <div id="game"></div>
+
+  <script>
+    const partUrls = [
+      "https://raw.githubusercontent.com/GLITCHED-OVERRIDE/Glitched-Assets/main/Games/Large%20Assets/Legend%20of%20Zelda%3A%20Ocarina%20of%20Time%20N64/Legend%20of%20Zelda-Ocarina%20of%20Time.part.001",
+      "https://raw.githubusercontent.com/GLITCHED-OVERRIDE/Glitched-Assets/main/Games/Large%20Assets/Legend%20of%20Zelda%3A%20Ocarina%20of%20Time%20N64/Legend%20of%20Zelda-Ocarina%20of%20Time.part.002"
+    ];
+
+    const error = document.getElementById("error");
+
+    async function fetchAndMerge(urls) {
+      const parts = [];
+      for (let i = 0; i < urls.length; i++) {
+        const res = await fetch(urls[i]);
+        if (!res.ok) throw new Error(`Failed to fetch part ${i+1}`);
+        const data = new Uint8Array(await res.arrayBuffer());
+        parts.push(data);
+      }
+
+      const totalLength = parts.reduce((sum, p) => sum + p.length, 0);
+      const merged = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const p of parts) {
+        merged.set(p, offset);
+        offset += p.length;
+      }
+
+      return new Blob([merged]);
+    }
+
+    (async () => {
+      try {
+        const blob = await fetchAndMerge(partUrls);
+        const blobUrl = URL.createObjectURL(blob);
+
+        window.EJS_player = "#game";
+        window.EJS_gameName = "The Legend of Zelda: Ocarina of Time";
+        window.EJS_gameUrl = blobUrl;
+        window.EJS_core = "n64";
+        window.EJS_pathtodata = "data/";
+        window.EJS_startOnLoaded = true;
+
+        const script = document.createElement("script");
+        script.src = "data/loader.js";
+        script.onerror = () => error.textContent = "Failed to load EmulatorJS core";
+        document.body.appendChild(script);
+
+      } catch (e) {
+        error.textContent = "Error: " + e.message;
+        console.error(e);
+      }
+    })();
+  </script>
+</body>
+</html>

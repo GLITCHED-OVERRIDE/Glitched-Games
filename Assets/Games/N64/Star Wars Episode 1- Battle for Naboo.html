@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Star Wars Episode I: Battle for Naboo</title>
+  <base href="https://cdn.jsdelivr.net/gh/a456pur/seraph@main/storage/emulatorjs/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: monospace;
+      font-weight: bold;
+      background: #111;
+      color: #fff;
+      overflow: hidden;
+    }
+    #error {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #f33;
+      font-size: 18px;
+      text-align: center;
+      z-index: 1000;
+    }
+    #game {
+      position: absolute;
+      top: 0; 
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+  <div id="error"></div>
+  <div id="game"></div>
+
+  <script>
+    const parts = [
+      "https://raw.githubusercontent.com/GLITCHED-OVERRIDE/Glitched-Assets/main/Games/Large%20Assets/Star%20Wars%20Episode%201%3A%20Battle%20For%20Naboo%20N64/Star%20Wars%20Episode%20I%20-%20Battle%20for%20Naboo%20(USA).part.001",
+      "https://raw.githubusercontent.com/GLITCHED-OVERRIDE/Glitched-Assets/main/Games/Large%20Assets/Star%20Wars%20Episode%201%3A%20Battle%20For%20Naboo%20N64/Star%20Wars%20Episode%20I%20-%20Battle%20for%20Naboo%20(USA).part.002"
+    ];
+
+    const error = document.getElementById("error");
+
+    (async () => {
+      try {
+        const blobs = [];
+        for (const part of parts) {
+          const res = await fetch(part);
+          if (!res.ok) throw new Error(`Failed to fetch part: ${part}`);
+          blobs.push(await res.arrayBuffer());
+        }
+
+        const combined = new Blob(blobs, { type: "application/octet-stream" });
+        const blobUrl = URL.createObjectURL(combined);
+
+        window.EJS_player = "#game";
+        window.EJS_gameName = "Star Wars Episode I: Battle for Naboo";
+        window.EJS_gameUrl = blobUrl;
+        window.EJS_core = "n64";
+        window.EJS_pathtodata = "data/";
+        window.EJS_startOnLoaded = true;
+
+        const script = document.createElement("script");
+        script.src = "data/loader.js";
+        script.onerror = () => error.textContent = "Failed to load EmulatorJS core";
+        document.body.appendChild(script);
+
+      } catch (e) {
+        error.textContent = "Error: " + e.message;
+        console.error(e);
+      }
+    })();
+  </script>
+</body>
+</html>
