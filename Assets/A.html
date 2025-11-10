@@ -1,24 +1,237 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Glitched Anime</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      overflow: hidden;
-    }
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Ganim</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#000;color:#fff;font-family:'Poppins',sans-serif;overflow-x:hidden;}
+header{position:sticky;top:0;z-index:1000;background:#111;display:flex;align-items:center;justify-content:space-between;padding:15px 30px;border-bottom:2px solid #c00;}
+#logo{font-size:1.8rem;font-weight:bold;color:#ff3030;}
+#openSearch{background:#111;border:none;color:#fff;font-size:1.2rem;cursor:pointer;}
+#openSearch:hover{color:#ff3030;}
+.section-title{font-size:1.4rem;color:#ff3030;margin:20px 30px 10px;border-left:5px solid #ff3030;padding-left:10px;}
+.anime-row{display:flex;overflow-x:auto;padding:0 30px 20px;gap:15px;scroll-behavior:smooth;}
+.anime-row::-webkit-scrollbar{height:8px;}
+.anime-row::-webkit-scrollbar-thumb{background:#c00;border-radius:4px;}
+.anime{flex:0 0 auto;width:180px;background:#111;border-radius:10px;overflow:hidden;cursor:pointer;transition:transform 0.3s,box-shadow 0.3s;position:relative;}
+.anime:hover{transform:scale(1.07);box-shadow:0 0 15px #c00;}
+.anime img{width:100%;height:270px;object-fit:cover;border-bottom:2px solid #c00;}
+.anime-info{text-align:center;padding:8px;}
+.anime-info h3{font-size:1rem;margin-bottom:5px;}
+#animeDetailOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:3000;padding:30px;overflow-y:auto;color:#fff;}
+#animeDetailOverlay.show{display:block;}
+#animeDetailOverlay .content{display:flex;flex-wrap:wrap;gap:20px;max-width:1100px;margin:0 auto;background:#111;padding:20px;border-radius:10px;position:relative;}
+#animeDetailOverlay img{width:320px;height:480px;object-fit:cover;border-radius:10px;flex-shrink:0;}
+#animeDetailOverlay .details{flex:1;display:flex;flex-direction:column;}
+#animeDetailOverlay h2{color:#ff3030;margin-bottom:10px;font-size:1.8rem;}
+#animeDetailOverlay p{margin-bottom:8px;line-height:1.4;}
+#episodeSelect{margin-top:10px;padding:10px;background:#111;color:#fff;border:1px solid #c00;border-radius:5px;font-size:1rem;cursor:pointer;}
+#episodeSelect:hover{border-color:#ff3030;}
+#playControls{display:flex;align-items:center;gap:10px;margin-top:10px;}
+#playButton,#fullscreenBtn{padding:12px 18px;background:#c00;border:none;color:#fff;border-radius:5px;cursor:pointer;font-weight:bold;transition:background 0.3s;font-size:0.95rem;}
+#playButton:hover,#fullscreenBtn:hover{background:#ff3030;}
+#fullscreenBtn i{margin-right:5px;}
+#closeDetail{position:absolute;top:15px;right:25px;font-size:2rem;cursor:pointer;color:#fff;}
+#playerContainer{margin-top:20px;position:relative;background:#000;border-radius:10px;padding:10px;}
+#player{width:100%;max-height:70vh;border-radius:8px;background:#000;display:none;outline:none;}
+:fullscreen #player, :-webkit-full-screen #player { width:100%; height:100%; }
+/* Search overlay */
+#searchOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:4000;padding:30px;overflow-y:auto;}
+#searchOverlay.show{display:block;}
+#closeSearch{position:absolute;top:15px;right:25px;font-size:2rem;cursor:pointer;color:#fff;}
+#searchControls{display:flex;justify-content:center;align-items:center;gap:10px;margin-bottom:20px;}
+#searchInputOverlay{width:60%;max-width:400px;padding:12px 15px;font-size:1.2rem;border-radius:5px;border:1px solid #c00;background:#000;color:#fff;outline:none;}
+#searchInputOverlay:focus{border-color:#ff3030;}
+#searchResults{display:flex;flex-wrap:wrap;gap:15px;justify-content:center;}
+@media(max-width:900px){
+  #animeDetailOverlay img{width:220px;height:330px;}
+  #animeDetailOverlay .content{padding:15px;}
+  #player{height:50vh;}
+}
+</style>
 </head>
 <body>
-  <iframe src="https://watanuki.shop/home" allowfullscreen></iframe>
+
+<header>
+  <div id="logo">Ganim</div>
+  <button id="openSearch"><i class="fas fa-search"></i></button>
+</header>
+
+<main>
+  <h2 class="section-title" id="recentlyWatchedTitle" style="display:none;">Recently Watched</h2>
+  <div class="anime-row" id="recentlyWatchedList"></div>
+
+  <h2 class="section-title">Top Airing</h2>
+  <div class="anime-row" id="topAiringList"></div>
+
+  <h2 class="section-title">Most Popular</h2>
+  <div class="anime-row" id="popularList"></div>
+
+  <h2 class="section-title">Recently Added</h2>
+  <div class="anime-row" id="recentList"></div>
+</main>
+
+<!-- Anime Detail Overlay -->
+<div id="animeDetailOverlay">
+  <div id="closeDetail">&times;</div>
+  <div class="content">
+    <img id="detailPoster" src="" alt="Poster">
+    <div class="details">
+      <h2 id="detailTitle"></h2>
+      <p id="detailDesc"></p>
+      <label for="episodeSelect"><strong>Episodes:</strong></label>
+      <select id="episodeSelect"></select>
+
+      <div id="playControls">
+        <button id="playButton"><i class="fas fa-play"></i> Play</button>
+        <button id="fullscreenBtn"><i class="fas fa-expand"></i> Fullscreen</button>
+      </div>
+
+      <div id="playerContainer">
+        <video id="player" controls playsinline webkit-playsinline></video>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Search Overlay -->
+<div id="searchOverlay">
+  <div id="closeSearch">&times;</div>
+  <div id="searchControls">
+    <input type="text" id="searchInputOverlay" placeholder="Search for an anime...">
+  </div>
+  <div class="anime-row" id="searchResults"></div>
+</div>
+
+<script>
+const API_BASE = "https://ani-api-sable.vercel.app/anime/zoro";
+const STORAGE_KEY = "ganim_recentlyWatched";
+const MAX_RECENT = 10;
+
+// Helper for safe namespaced localStorage
+const GanimStorage = {
+  get() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch { return []; }
+  },
+  set(list) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  },
+  add(anime) {
+    let list = this.get().filter(x => x.id !== anime.id);
+    list.unshift(anime);
+    if (list.length > MAX_RECENT) list.pop();
+    this.set(list);
+  }
+};
+
+// elements
+const topAiringList = document.getElementById("topAiringList");
+const popularList = document.getElementById("popularList");
+const recentList = document.getElementById("recentList");
+const recentlyWatchedTitle = document.getElementById("recentlyWatchedTitle");
+const recentlyWatchedList = document.getElementById("recentlyWatchedList");
+const animeDetailOverlay = document.getElementById("animeDetailOverlay");
+const closeDetail = document.getElementById("closeDetail");
+const detailPoster = document.getElementById("detailPoster");
+const detailTitle = document.getElementById("detailTitle");
+const detailDesc = document.getElementById("detailDesc");
+const episodeSelect = document.getElementById("episodeSelect");
+const playButton = document.getElementById("playButton");
+const fullscreenBtn = document.getElementById("fullscreenBtn");
+const player = document.getElementById("player");
+const playerContainer = document.getElementById("playerContainer");
+const searchOverlay = document.getElementById("searchOverlay");
+const openSearch = document.getElementById("openSearch");
+const closeSearch = document.getElementById("closeSearch");
+const searchInput = document.getElementById("searchInputOverlay");
+const searchResults = document.getElementById("searchResults");
+
+async function fetchJson(url){ try{ const r=await fetch(url); return await r.json(); }catch(e){console.error(e);return null;} }
+
+function createAnimeCard(a){
+  const div=document.createElement("div");
+  div.className="anime";
+  div.innerHTML=`<img src="${a.image}" alt="${a.title}"><div class="anime-info"><h3>${a.title}</h3></div>`;
+  div.onclick=()=>showAnimeDetail(a.id,a.episodeId);
+  return div;
+}
+
+// render recent list
+function renderRecentlyWatched(){
+  const list=GanimStorage.get();
+  recentlyWatchedTitle.style.display=list.length?"block":"none";
+  recentlyWatchedList.innerHTML="";
+  list.forEach(a=>recentlyWatchedList.appendChild(createAnimeCard(a)));
+}
+
+// load homepage lists
+async function loadList(endpoint,container){
+  const data=await fetchJson(`${API_BASE}/${endpoint}`);
+  const list=(data&&data.results)||[];
+  container.innerHTML="";
+  list.forEach(a=>container.appendChild(createAnimeCard(a)));
+}
+
+async function showAnimeDetail(id,epId=null){
+  const data=await fetchJson(`${API_BASE}/info?id=${id}`);
+  if(!data)return;
+  detailPoster.src=data.image||"";
+  detailTitle.textContent=data.title||"";
+  detailDesc.textContent=data.description||"";
+  episodeSelect.innerHTML="";
+  (data.episodes||[]).forEach(ep=>{
+    const opt=document.createElement("option");
+    opt.value=ep.id;
+    opt.textContent=`Ep ${ep.number} - ${ep.title||""}`;
+    episodeSelect.appendChild(opt);
+  });
+  animeDetailOverlay.classList.add("show");
+  player.style.display="none";player.pause();player.removeAttribute("src");
+  if(epId) episodeSelect.value=epId;
+  playButton.onclick=()=>{ const v=episodeSelect.value; if(v) loadEpisode(id,v); };
+}
+
+async function loadEpisode(animeId,epId){
+  const data=await fetchJson(`${API_BASE}/watch/${epId}`);
+  const src=data.sources?.[0]?.url;
+  if(!src){alert("No source found.");return;}
+  player.src=src;player.style.display="block";
+  player.play().catch(()=>{});
+  GanimStorage.add({id:animeId,image:detailPoster.src,title:detailTitle.textContent,episodeId:epId});
+  renderRecentlyWatched();
+}
+
+fullscreenBtn.onclick=()=>{
+  const v=player;
+  if(v.requestFullscreen) v.requestFullscreen();
+  else if(v.webkitEnterFullscreen) v.webkitEnterFullscreen();
+  else if(playerContainer.requestFullscreen) playerContainer.requestFullscreen();
+};
+
+openSearch.onclick=()=>searchOverlay.classList.add("show");
+closeSearch.onclick=()=>searchOverlay.classList.remove("show");
+
+searchInput.oninput=async()=>{
+  const q=searchInput.value.trim();
+  if(!q){searchResults.innerHTML="";return;}
+  const data=await fetchJson(`${API_BASE}/${encodeURIComponent(q)}`);
+  const list=(data&&data.results)||[];
+  searchResults.innerHTML="";
+  list.forEach(a=>searchResults.appendChild(createAnimeCard(a)));
+};
+
+closeDetail.onclick=()=>{animeDetailOverlay.classList.remove("show");player.pause();};
+
+window.onload=()=>{
+  renderRecentlyWatched();
+  loadList("top-airing",topAiringList);
+  loadList("most-popular",popularList);
+  loadList("recent-episodes",recentList);
+};
+</script>
 </body>
-</html>
+  </html>
